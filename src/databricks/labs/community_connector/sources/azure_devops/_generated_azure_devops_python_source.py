@@ -1464,16 +1464,12 @@ def register_lakeflow_source(spark):
             project = options.get("project")
 
             if not organization:
-                raise ValueError(
-                    "Azure DevOps connector requires 'organization'"
-                )
+                raise ValueError("Azure DevOps connector requires 'organization'")
 
             self.organization = organization
             self.project = project
             self.base_url = f"https://dev.azure.com/{organization}"
-            self.vssps_base_url = (
-                f"https://vssps.dev.azure.com/{organization}"
-            )
+            self.vssps_base_url = f"https://vssps.dev.azure.com/{organization}"
             # Builds finishing after this instant wait for the next run, so an
             # incremental read always converges even while builds keep finishing.
             self._init_time = datetime.now(timezone.utc)
@@ -1503,9 +1499,7 @@ def register_lakeflow_source(spark):
             if access_token:
                 self._session.headers["Authorization"] = f"Bearer {access_token}"
             elif personal_access_token:
-                auth_b64 = base64.b64encode(
-                    f":{personal_access_token}".encode("ascii")
-                ).decode("ascii")
+                auth_b64 = base64.b64encode(f":{personal_access_token}".encode("ascii")).decode("ascii")
                 self._session.headers["Authorization"] = f"Basic {auth_b64}"
             else:
                 raise ValueError(
@@ -1520,16 +1514,12 @@ def register_lakeflow_source(spark):
         def list_tables(self) -> list[str]:
             return SUPPORTED_TABLES
 
-        def get_table_schema(
-            self, table_name: str, table_options: dict[str, str]
-        ) -> StructType:
+        def get_table_schema(self, table_name: str, table_options: dict[str, str]) -> StructType:
             if table_name not in TABLE_SCHEMAS:
                 raise ValueError(f"Unsupported table: {table_name!r}")
             return TABLE_SCHEMAS[table_name]
 
-        def read_table_metadata(
-            self, table_name: str, table_options: dict[str, str]
-        ) -> dict:
+        def read_table_metadata(self, table_name: str, table_options: dict[str, str]) -> dict:
             if table_name not in TABLE_METADATA:
                 raise ValueError(f"Unsupported table: {table_name!r}")
             return TABLE_METADATA[table_name]
@@ -1568,14 +1558,10 @@ def register_lakeflow_source(spark):
         # Helper: resolve project
         # ------------------------------------------------------------------ #
 
-        def _resolve_project(
-            self, table_options: dict[str, str]
-        ) -> str | None:
+        def _resolve_project(self, table_options: dict[str, str]) -> str | None:
             return table_options.get("project") or self.project
 
-        def _resolve_projects(
-            self, table_options: dict[str, str]
-        ) -> list[str]:
+        def _resolve_projects(self, table_options: dict[str, str]) -> list[str]:
             return resolve_projects(
                 self._session,
                 self.base_url,
@@ -1609,7 +1595,10 @@ def register_lakeflow_source(spark):
                     # log and continue so one repo doesn't fail the batch.
                     _LOG.warning(
                         "Skipping %s/%s for %s: %s",
-                        proj, repo_id, reader.__name__, exc,
+                        proj,
+                        repo_id,
+                        reader.__name__,
+                        exc,
                     )
                     continue
             return iter(all_records), {}
@@ -1677,7 +1666,9 @@ def register_lakeflow_source(spark):
                     # Projects without Git enabled return 404 — log and
                     # continue so one bad project doesn't fail the batch.
                     _LOG.warning(
-                        "Skipping repositories for project %s: %s", name, exc,
+                        "Skipping repositories for project %s: %s",
+                        name,
+                        exc,
                     )
                     continue
             return iter(all_records), {}
@@ -1719,10 +1710,7 @@ def register_lakeflow_source(spark):
             the ADO server-side ``>=`` filter strict, so we don't re-emit
             the boundary commit.
             """
-            url = (
-                f"{self.base_url}/{project}/_apis/git/repositories"
-                f"/{repo_id}/commits"
-            )
+            url = f"{self.base_url}/{project}/_apis/git/repositories" f"/{repo_id}/commits"
             top = 1000
             skip = 0
             max_date: str | None = since
@@ -1738,9 +1726,7 @@ def register_lakeflow_source(spark):
                     params["searchCriteria.fromDate"] = since
 
                 try:
-                    page = api_get_list(
-                        self._session, url, params, "commits"
-                    )
+                    page = api_get_list(self._session, url, params, "commits")
                 except RuntimeError:
                     # Skip repos we can't read (e.g. disabled, no permission)
                     return records, max_date
@@ -1755,9 +1741,7 @@ def register_lakeflow_source(spark):
                     rec["repository_id"] = repo_id
                     nullify_empty(rec, "author", "committer", "changeCounts")
                     records.append(rec)
-                    if commit_date and (
-                        max_date is None or commit_date > max_date
-                    ):
+                    if commit_date and (max_date is None or commit_date > max_date):
                         max_date = commit_date
 
                 if len(page) < top:
@@ -1766,9 +1750,7 @@ def register_lakeflow_source(spark):
 
             return records, max_date
 
-        def _resolve_repo_pairs(
-            self, table_options: dict[str, str]
-        ) -> list[tuple[str, str]]:
+        def _resolve_repo_pairs(self, table_options: dict[str, str]) -> list[tuple[str, str]]:
             """Return the (project, repo_id) pairs to read for this table.
 
             Priority:
@@ -1781,9 +1763,7 @@ def register_lakeflow_source(spark):
 
             if repo_id:
                 if not project:
-                    raise ValueError(
-                        "Project must be specified when repository_id is provided"
-                    )
+                    raise ValueError("Project must be specified when repository_id is provided")
                 return [(project, repo_id)]
 
             repos_iter, _ = self._read_repositories({}, {"project": project} if project else {})
@@ -1822,9 +1802,7 @@ def register_lakeflow_source(spark):
             for project, repo_id in repo_pairs:
                 key = f"{project}/{repo_id}"
                 since = watermarks.get(key)
-                records, max_time = self._fetch_pullrequests(
-                    project, repo_id, status_filter, since
-                )
+                records, max_time = self._fetch_pullrequests(project, repo_id, status_filter, since)
                 all_records.extend(records)
                 if max_time and (not since or max_time > since):
                     watermarks[key] = max_time
@@ -1839,10 +1817,7 @@ def register_lakeflow_source(spark):
             since: str | None,
         ) -> tuple[list[dict[str, Any]], str | None]:
             """Fetch pullrequests for a single repo, optionally filtered by *since*."""
-            url = (
-                f"{self.base_url}/{project}/_apis/git/repositories"
-                f"/{repo_id}/pullrequests"
-            )
+            url = f"{self.base_url}/{project}/_apis/git/repositories" f"/{repo_id}/pullrequests"
             params: dict[str, str] = {
                 "api-version": "7.1",
                 "searchCriteria.status": status_filter,
@@ -1852,13 +1827,13 @@ def register_lakeflow_source(spark):
                 params["searchCriteria.minTime"] = since
 
             try:
-                prs = api_get_list(
-                    self._session, url, params, "pullrequests"
-                )
+                prs = api_get_list(self._session, url, params, "pullrequests")
             except RuntimeError as exc:
                 _LOG.warning(
                     "Skipping pullrequests for %s/%s: %s",
-                    project, repo_id, exc,
+                    project,
+                    repo_id,
+                    exc,
                 )
                 return [], None
 
@@ -1875,14 +1850,14 @@ def register_lakeflow_source(spark):
                 rec["project_name"] = project
                 rec["repository_id"] = repo_id
                 nullify_empty(
-                    rec, "createdBy",
-                    "lastMergeSourceCommit", "lastMergeTargetCommit",
+                    rec,
+                    "createdBy",
+                    "lastMergeSourceCommit",
+                    "lastMergeTargetCommit",
                     "lastMergeCommit",
                 )
                 records.append(rec)
-                if effective_time and (
-                    max_time is None or effective_time > max_time
-                ):
+                if effective_time and (max_time is None or effective_time > max_time):
                     max_time = effective_time
 
             return records, max_time
@@ -1892,28 +1867,19 @@ def register_lakeflow_source(spark):
         ) -> tuple[Iterator[dict], dict]:
             repo_id = table_options.get("repository_id")
             if not repo_id:
-                return self._for_all_repos(
-                    start_offset, table_options, self._read_refs
-                )
+                return self._for_all_repos(start_offset, table_options, self._read_refs)
 
             project = self._resolve_project(table_options)
             if not project:
-                raise ValueError(
-                    "Project must be specified when repository_id is provided"
-                )
+                raise ValueError("Project must be specified when repository_id is provided")
 
-            url = (
-                f"{self.base_url}/{project}/_apis/git/repositories"
-                f"/{repo_id}/refs"
-            )
+            url = f"{self.base_url}/{project}/_apis/git/repositories" f"/{repo_id}/refs"
             params: dict[str, str] = {"api-version": "7.1"}
             ref_filter = table_options.get("filter")
             if ref_filter:
                 params["filter"] = ref_filter
 
-            refs = api_get_list(
-                self._session, url, params, "refs"
-            )
+            refs = api_get_list(self._session, url, params, "refs")
 
             records = []
             for ref in refs:
@@ -1954,10 +1920,7 @@ def register_lakeflow_source(spark):
             self, project: str, repo_id: str, since: str | None
         ) -> tuple[list[dict[str, Any]], str | None]:
             """Fetch all pushes for a single repo since *since* (exclusive)."""
-            url = (
-                f"{self.base_url}/{project}/_apis/git/repositories"
-                f"/{repo_id}/pushes"
-            )
+            url = f"{self.base_url}/{project}/_apis/git/repositories" f"/{repo_id}/pushes"
             top = 1000
             skip = 0
             max_date: str | None = since
@@ -1973,9 +1936,7 @@ def register_lakeflow_source(spark):
                     params["searchCriteria.fromDate"] = since
 
                 try:
-                    page = api_get_list(
-                        self._session, url, params, "pushes"
-                    )
+                    page = api_get_list(self._session, url, params, "pushes")
                 except RuntimeError:
                     return records, max_date
 
@@ -1989,9 +1950,7 @@ def register_lakeflow_source(spark):
                     rec["repository_id"] = repo_id
                     nullify_empty(rec, "pushedBy")
                     records.append(rec)
-                    if push_date and (
-                        max_date is None or push_date > max_date
-                    ):
+                    if push_date and (max_date is None or push_date > max_date):
                         max_date = push_date
 
                 if len(page) < top:
@@ -2015,8 +1974,7 @@ def register_lakeflow_source(spark):
             response = request_with_retry(self._session, url, params)
             if response.status_code != 200:
                 raise RuntimeError(
-                    f"Azure DevOps API error for users: "
-                    f"{response.status_code} {response.text}"
+                    f"Azure DevOps API error for users: " f"{response.status_code} {response.text}"
                 )
 
             users = response.json().get("value", [])
@@ -2072,12 +2030,8 @@ def register_lakeflow_source(spark):
             if explicit_repo and explicit_pr:
                 project = self._resolve_project(table_options)
                 if not project:
-                    raise ValueError(
-                        "Project required when repository_id + pullrequest_id given"
-                    )
-                all_records.extend(
-                    self._fetch_pr_threads(project, explicit_repo, int(explicit_pr))
-                )
+                    raise ValueError("Project required when repository_id + pullrequest_id given")
+                all_records.extend(self._fetch_pr_threads(project, explicit_repo, int(explicit_pr)))
                 return iter(all_records), start_offset
 
             # Auto-discovery path — per-repo incremental watermark
@@ -2096,9 +2050,7 @@ def register_lakeflow_source(spark):
                         if since and last_updated and last_updated <= since:
                             continue
                         all_records.append(thread)
-                        if last_updated and (
-                            max_updated is None or last_updated > max_updated
-                        ):
+                        if last_updated and (max_updated is None or last_updated > max_updated):
                             max_updated = last_updated
 
                 if max_updated and (not since or max_updated > since):
@@ -2106,14 +2058,9 @@ def register_lakeflow_source(spark):
 
             return iter(all_records), {"watermarks": watermarks}
 
-        def _list_updated_pr_ids(
-            self, project: str, repo_id: str, since: str | None
-        ) -> list[int]:
+        def _list_updated_pr_ids(self, project: str, repo_id: str, since: str | None) -> list[int]:
             """Return PR IDs whose 'updated' timestamp is after *since*."""
-            url = (
-                f"{self.base_url}/{project}/_apis/git/repositories"
-                f"/{repo_id}/pullrequests"
-            )
+            url = f"{self.base_url}/{project}/_apis/git/repositories" f"/{repo_id}/pullrequests"
             params: dict[str, str] = {
                 "api-version": "7.1",
                 "searchCriteria.status": "all",
@@ -2122,21 +2069,18 @@ def register_lakeflow_source(spark):
                 params["searchCriteria.queryTimeRangeType"] = "updated"
                 params["searchCriteria.minTime"] = since
             try:
-                prs = api_get_list(
-                    self._session, url, params, "pullrequest_threads"
-                )
+                prs = api_get_list(self._session, url, params, "pullrequest_threads")
             except RuntimeError as exc:
                 _LOG.warning(
-                    "Skipping PR discovery for %s/%s: %s", project, repo_id, exc,
+                    "Skipping PR discovery for %s/%s: %s",
+                    project,
+                    repo_id,
+                    exc,
                 )
                 return []
-            return [
-                p["pullRequestId"] for p in prs if p.get("pullRequestId")
-            ]
+            return [p["pullRequestId"] for p in prs if p.get("pullRequestId")]
 
-        def _fetch_pr_threads(
-            self, project: str, repo_id: str, pr_id: int
-        ) -> list[dict[str, Any]]:
+        def _fetch_pr_threads(self, project: str, repo_id: str, pr_id: int) -> list[dict[str, Any]]:
             """Fetch all threads for a single PR, with connector fields filled in."""
             url = (
                 f"{self.base_url}/{project}/_apis/git/repositories"
@@ -2144,13 +2088,18 @@ def register_lakeflow_source(spark):
             )
             try:
                 threads = api_get_list(
-                    self._session, url,
-                    {"api-version": "7.1"}, "pullrequest_threads",
+                    self._session,
+                    url,
+                    {"api-version": "7.1"},
+                    "pullrequest_threads",
                 )
             except RuntimeError as exc:
                 _LOG.warning(
                     "Skipping threads for PR %d in %s/%s: %s",
-                    pr_id, project, repo_id, exc,
+                    pr_id,
+                    project,
+                    repo_id,
+                    exc,
                 )
                 return []
 
@@ -2175,8 +2124,10 @@ def register_lakeflow_source(spark):
                     f"/{repo_id}/pullRequests/{pr_id}/workitems"
                 )
                 items = api_get_list(
-                    self._session, url,
-                    {"api-version": "7.1"}, "pullrequest_workitems",
+                    self._session,
+                    url,
+                    {"api-version": "7.1"},
+                    "pullrequest_workitems",
                 )
                 results = []
                 for item in items:
@@ -2189,8 +2140,11 @@ def register_lakeflow_source(spark):
                 return results
 
             records = for_each_pr(
-                self._session, self.base_url,
-                projects, table_options, _fetch,
+                self._session,
+                self.base_url,
+                projects,
+                table_options,
+                _fetch,
             )
             return iter(records), {}
 
@@ -2205,8 +2159,10 @@ def register_lakeflow_source(spark):
                     f"/{repo_id}/pullRequests/{pr_id}/commits"
                 )
                 commits = api_get_list(
-                    self._session, url,
-                    {"api-version": "7.1"}, "pullrequest_commits",
+                    self._session,
+                    url,
+                    {"api-version": "7.1"},
+                    "pullrequest_commits",
                 )
                 results = []
                 for c in commits:
@@ -2219,8 +2175,11 @@ def register_lakeflow_source(spark):
                 return results
 
             records = for_each_pr(
-                self._session, self.base_url,
-                projects, table_options, _fetch,
+                self._session,
+                self.base_url,
+                projects,
+                table_options,
+                _fetch,
             )
             return iter(records), {}
 
@@ -2235,8 +2194,10 @@ def register_lakeflow_source(spark):
                     f"/{repo_id}/pullRequests/{pr_id}/reviewers"
                 )
                 reviewers = api_get_list(
-                    self._session, url,
-                    {"api-version": "7.1"}, "pullrequest_reviewers",
+                    self._session,
+                    url,
+                    {"api-version": "7.1"},
+                    "pullrequest_reviewers",
                 )
                 results = []
                 for r in reviewers:
@@ -2249,8 +2210,11 @@ def register_lakeflow_source(spark):
                 return results
 
             records = for_each_pr(
-                self._session, self.base_url,
-                projects, table_options, _fetch,
+                self._session,
+                self.base_url,
+                projects,
+                table_options,
+                _fetch,
             )
             return iter(records), {}
 
@@ -2287,12 +2251,8 @@ def register_lakeflow_source(spark):
 
             for project in projects:
                 if explicit_ids:
-                    ids_to_fetch = [
-                        i.strip() for i in explicit_ids.split(",") if i.strip()
-                    ]
-                    records, _ = self._fetch_workitems_by_ids(
-                        project, ids_to_fetch
-                    )
+                    ids_to_fetch = [i.strip() for i in explicit_ids.split(",") if i.strip()]
+                    records, _ = self._fetch_workitems_by_ids(project, ids_to_fetch)
                     all_records.extend(records)
                     continue
 
@@ -2300,16 +2260,11 @@ def register_lakeflow_source(spark):
                 if not ids_to_fetch:
                     continue
 
-                records, max_changed = self._fetch_workitems_by_ids(
-                    project, ids_to_fetch
-                )
+                records, max_changed = self._fetch_workitems_by_ids(project, ids_to_fetch)
                 all_records.extend(records)
                 # Advance watermark monotonically so the streaming framework
                 # sees end_offset != start_offset whenever any item changed.
-                if max_changed and (
-                    not watermarks.get(project)
-                    or max_changed > watermarks[project]
-                ):
+                if max_changed and (not watermarks.get(project) or max_changed > watermarks[project]):
                     watermarks[project] = max_changed
                     watermarks_advanced = True
 
@@ -2376,16 +2331,12 @@ def register_lakeflow_source(spark):
                         changed_date = rec["fields"].get("System.ChangedDate")
                         rec["fields"] = json.dumps(rec["fields"])
                     records.append(rec)
-                    if changed_date and (
-                        max_changed is None or changed_date > max_changed
-                    ):
+                    if changed_date and (max_changed is None or changed_date > max_changed):
                         max_changed = changed_date
 
             return records, max_changed
 
-        def _get_workitem_batch(
-            self, project: str, ids: list[str]
-        ) -> list[dict[str, Any]]:
+        def _get_workitem_batch(self, project: str, ids: list[str]) -> list[dict[str, Any]]:
             """Bulk-GET work items, isolating IDs that cannot be read.
 
             ``$errorPolicy=omit`` covers nonexistent IDs, but a deleted item or
@@ -2407,19 +2358,18 @@ def register_lakeflow_source(spark):
                 return response.json().get("value", [])
             if response.status_code != 404:
                 raise RuntimeError(
-                    f"Azure DevOps API error for workitems: "
-                    f"{response.status_code} {response.text}"
+                    f"Azure DevOps API error for workitems: " f"{response.status_code} {response.text}"
                 )
             if len(ids) == 1:
                 _LOG.warning(
                     "Skipping unreadable work item %s in project %s",
-                    ids[0], project,
+                    ids[0],
+                    project,
                 )
                 return []
             mid = len(ids) // 2
-            return (
-                self._get_workitem_batch(project, ids[:mid])
-                + self._get_workitem_batch(project, ids[mid:])
+            return self._get_workitem_batch(project, ids[:mid]) + self._get_workitem_batch(
+                project, ids[mid:]
             )
 
         def _read_workitem_revisions(
@@ -2455,10 +2405,7 @@ def register_lakeflow_source(spark):
 
             for i in range(start_idx, len(projects)):
                 project = projects[i]
-                url = (
-                    f"{self.base_url}/{project}"
-                    "/_apis/wit/reporting/workitemrevisions"
-                )
+                url = f"{self.base_url}/{project}" "/_apis/wit/reporting/workitemrevisions"
                 params: dict[str, str] = {
                     "api-version": "7.1",
                     "includeDeleted": "true",
@@ -2470,9 +2417,7 @@ def register_lakeflow_source(spark):
                     params["continuationToken"] = token
 
                 try:
-                    data = api_get(
-                        self._session, url, params, "workitem_revisions"
-                    )
+                    data = api_get(self._session, url, params, "workitem_revisions")
                 except RuntimeError:
                     # Skip projects we can't read (permissions, disabled, etc.)
                     current_token = None
@@ -2495,9 +2440,7 @@ def register_lakeflow_source(spark):
                     rec["workItemId"] = rec.get("id")
                     fields_dict = rec.get("fields")
                     if isinstance(fields_dict, dict):
-                        rec["revisedDate"] = fields_dict.get(
-                            "System.RevisedDate"
-                        )
+                        rec["revisedDate"] = fields_dict.get("System.RevisedDate")
                         rec["fields"] = json.dumps(fields_dict)
                     rec["url"] = (
                         f"{self.base_url}/{project}/_apis/wit/workItems/"
@@ -2555,13 +2498,12 @@ def register_lakeflow_source(spark):
             all_records: list[dict[str, Any]] = []
 
             for project in projects:
-                url = (
-                    f"{self.base_url}/{project}"
-                    "/_apis/wit/workitemtypes"
-                )
+                url = f"{self.base_url}/{project}" "/_apis/wit/workitemtypes"
                 types = api_get_list(
-                    self._session, url,
-                    {"api-version": "7.1"}, "workitem_types",
+                    self._session,
+                    url,
+                    {"api-version": "7.1"},
+                    "workitem_types",
                 )
                 for wt in types:
                     rec = dict(wt)
@@ -2570,7 +2512,6 @@ def register_lakeflow_source(spark):
                     all_records.append(rec)
 
             return iter(all_records), {}
-
 
         # -- Pipelines, builds and build timeline (steps) ------------------- #
 
@@ -2602,7 +2543,9 @@ def register_lakeflow_source(spark):
                     if exc.status_code != 404:
                         raise
                     _LOG.warning(
-                        "Skipping pipelines for project %s: %s", project, exc,
+                        "Skipping pipelines for project %s: %s",
+                        project,
+                        exc,
                     )
                     continue
                 for p in pipelines:
@@ -2643,7 +2586,8 @@ def register_lakeflow_source(spark):
             )
             since_dt = parse_ts(since) if since else None
             fresh = [
-                b for b in builds
+                b
+                for b in builds
                 if b.get("finishTime")
                 and (since_dt is None or parse_ts(b["finishTime"]) > since_dt)
                 and parse_ts(b["finishTime"]) <= self._init_time
@@ -2652,9 +2596,7 @@ def register_lakeflow_source(spark):
             return fresh
 
         @staticmethod
-        def _cap_builds(
-            builds: list[dict[str, Any]], limit: int | None
-        ) -> list[dict[str, Any]]:
+        def _cap_builds(builds: list[dict[str, Any]], limit: int | None) -> list[dict[str, Any]]:
             """Cap *builds* at *limit* without splitting equal finish times.
 
             Append tables can't tolerate a cursor that lands mid-way through a
@@ -2673,9 +2615,7 @@ def register_lakeflow_source(spark):
             self, start_offset: dict, table_options: dict[str, str]
         ) -> tuple[list[tuple[str, dict[str, Any]]], dict[str, str]]:
             """Return ``(project, build)`` pairs to emit plus advanced watermarks."""
-            watermarks: dict[str, str] = dict(
-                (start_offset or {}).get("watermarks", {})
-            )
+            watermarks: dict[str, str] = dict((start_offset or {}).get("watermarks", {}))
             limit = self._max_records(table_options)
             definition_id = table_options.get("definition_id")
 
@@ -2685,14 +2625,14 @@ def register_lakeflow_source(spark):
                 if remaining is not None and remaining <= 0:
                     break
                 try:
-                    builds = self._fetch_new_builds(
-                        project, watermarks.get(project), definition_id
-                    )
+                    builds = self._fetch_new_builds(project, watermarks.get(project), definition_id)
                 except ApiError as exc:
                     if exc.status_code != 404:
                         raise
                     _LOG.warning(
-                        "Skipping builds for project %s: %s", project, exc,
+                        "Skipping builds for project %s: %s",
+                        project,
+                        exc,
                     )
                     continue
                 builds = self._cap_builds(builds, remaining)
@@ -2709,9 +2649,7 @@ def register_lakeflow_source(spark):
             Optional ``definition_id`` restricts the read to one pipeline.
             ``max_records_per_batch`` caps builds returned per call.
             """
-            pairs, watermarks = self._collect_new_builds(
-                start_offset, table_options
-            )
+            pairs, watermarks = self._collect_new_builds(start_offset, table_options)
             if not pairs:
                 return iter([]), start_offset or {}
 
@@ -2721,15 +2659,18 @@ def register_lakeflow_source(spark):
                 rec["organization"] = self.organization
                 rec["project_name"] = project
                 nullify_empty(
-                    rec, "definition", "repository", "queue", "requestedFor",
-                    "requestedBy", "lastChangedBy",
+                    rec,
+                    "definition",
+                    "repository",
+                    "queue",
+                    "requestedFor",
+                    "requestedBy",
+                    "lastChangedBy",
                 )
                 records.append(rec)
             return iter(records), {"watermarks": watermarks}
 
-        def _fetch_timeline(
-            self, project: str, build_id: int
-        ) -> list[dict[str, Any]]:
+        def _fetch_timeline(self, project: str, build_id: int) -> list[dict[str, Any]]:
             """Return the timeline records (stages, jobs, tasks) of one build.
 
             A 404 (retention) or 204 (build never produced a timeline, e.g.
@@ -2744,7 +2685,9 @@ def register_lakeflow_source(spark):
             if response.status_code in (204, 404):
                 _LOG.warning(
                     "No timeline for build %s in project %s (HTTP %s)",
-                    build_id, project, response.status_code,
+                    build_id,
+                    project,
+                    response.status_code,
                 )
                 return []
             if response.status_code != 200:
@@ -2754,9 +2697,7 @@ def register_lakeflow_source(spark):
                 )
             return response.json().get("records") or []
 
-        def _timeline_rows(
-            self, project: str, build: dict[str, Any]
-        ) -> list[dict[str, Any]]:
+        def _timeline_rows(self, project: str, build: dict[str, Any]) -> list[dict[str, Any]]:
             rows = []
             for item in self._fetch_timeline(project, build["id"]):
                 rec = dict(item)
@@ -2786,20 +2727,12 @@ def register_lakeflow_source(spark):
                         "build_timeline with 'build_id' also requires a "
                         "'project' (table option or connection parameter)"
                     )
-                rows = self._timeline_rows(
-                    project, {"id": int(build_id), "finishTime": None}
-                )
+                rows = self._timeline_rows(project, {"id": int(build_id), "finishTime": None})
                 return iter(rows), start_offset or {}
 
             offset = start_offset or {}
-            # Builds with no timeline (204/404) yield no rows. Keep advancing
-            # past them until some rows appear: an empty batch must never be
-            # paired with an advanced offset. If none appear, the start offset
-            # is returned and those builds are re-checked on the next run.
             while True:
-                pairs, watermarks = self._collect_new_builds(
-                    offset, table_options
-                )
+                pairs, watermarks = self._collect_new_builds(offset, table_options)
                 if not pairs:
                     return iter([]), start_offset or {}
 
