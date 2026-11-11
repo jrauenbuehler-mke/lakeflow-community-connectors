@@ -1,0 +1,227 @@
+{
+  "version": 1,
+  "generated_at": "2026-11-11T22:02:23.790143Z",
+  "endpoints": [
+    {
+      "method": "GET",
+      "spec_path": "/{organization}/_apis/graph/users",
+      "sample_url": "https://vssps.dev.azure.com/MilwaukeeToolData/_apis/graph/users?api-version=7.1-preview.1",
+      "status": "validated",
+      "calls": 3,
+      "matched": 3,
+      "mismatched": 0,
+      "no_spec": 0,
+      "issues": []
+    },
+    {
+      "method": "GET",
+      "spec_path": "/{organization}/_apis/projects",
+      "sample_url": "https://dev.azure.com/MilwaukeeToolData/_apis/projects?api-version=7.1",
+      "status": "validated",
+      "calls": 3,
+      "matched": 3,
+      "mismatched": 0,
+      "no_spec": 0,
+      "issues": []
+    },
+    {
+      "method": "GET",
+      "spec_path": "/{organization}/{project}/_apis/build/builds",
+      "sample_url": "https://dev.azure.com/MilwaukeeToolData/enterprise-data/_apis/build/builds?api-version=7.1&statusFilter=completed&queryOrder=finishTimeAscending&%24top=1000",
+      "status": "mismatched",
+      "calls": 15,
+      "matched": 0,
+      "mismatched": 15,
+      "no_spec": 0,
+      "issues": [
+        "record fields in live missing from corpus: ['_links', 'appendCommitMessageToRunName', 'buildNumberRevision', 'logs', 'orchestrationPlan']"
+      ]
+    },
+    {
+      "method": "GET",
+      "spec_path": "/{organization}/{project}/_apis/build/builds/{build_id}/timeline",
+      "sample_url": "https://dev.azure.com/MilwaukeeToolData/enterprise-data/_apis/build/builds/131/timeline?api-version=7.1",
+      "status": "mismatched",
+      "calls": 5307,
+      "matched": 0,
+      "mismatched": 5307,
+      "no_spec": 0,
+      "issues": [
+        "top-level keys in live missing from spec: ['changeId', 'id', 'lastChangedBy', 'lastChangedOn', 'url']",
+        "record fields in live missing from corpus: ['currentOperation', 'details', 'previousAttempts', 'refName']",
+        "record fields in live missing from corpus: ['currentOperation', 'details', 'previousAttempts', 'queueId', 'refName']",
+        "status_code: live=204 spec=200"
+      ]
+    },
+    {
+      "method": "GET",
+      "spec_path": "/{organization}/{project}/_apis/git/repositories",
+      "sample_url": "https://dev.azure.com/MilwaukeeToolData/enterprise-data/_apis/git/repositories?api-version=7.1&includeLinks=true&includeAllUrls=true",
+      "status": "mismatched",
+      "calls": 27,
+      "matched": 9,
+      "mismatched": 18,
+      "no_spec": 0,
+      "issues": [
+        "record fields in live missing from corpus: ['validRemoteUrls']"
+      ]
+    },
+    {
+      "method": "GET",
+      "spec_path": "/{organization}/{project}/_apis/git/repositories/{repo_id}/commits",
+      "sample_url": "https://dev.azure.com/MilwaukeeToolData/enterprise-data/_apis/git/repositories/0177c1f4-c460-4e64-a089-01956ac5a13a/commits?api-version=7.1&%24top=1000&%24skip=0",
+      "status": "validated",
+      "calls": 203,
+      "matched": 203,
+      "mismatched": 0,
+      "no_spec": 0,
+      "issues": []
+    },
+    {
+      "method": "GET",
+      "spec_path": "/{organization}/{project}/_apis/git/repositories/{repo_id}/pullRequests/{pull_request_id}/commits",
+      "sample_url": "https://dev.azure.com/MilwaukeeToolData/enterprise-data/_apis/git/repositories/0177c1f4-c460-4e64-a089-01956ac5a13a/pullRequests/8066/commits?api-version=7.1",
+      "status": "validated",
+      "calls": 2601,
+      "matched": 2601,
+      "mismatched": 0,
+      "no_spec": 0,
+      "issues": []
+    },
+    {
+      "method": "GET",
+      "spec_path": "/{organization}/{project}/_apis/git/repositories/{repo_id}/pullRequests/{pull_request_id}/reviewers",
+      "sample_url": "https://dev.azure.com/MilwaukeeToolData/enterprise-data/_apis/git/repositories/0177c1f4-c460-4e64-a089-01956ac5a13a/pullRequests/8066/reviewers?api-version=7.1",
+      "status": "mismatched",
+      "calls": 2601,
+      "matched": 1083,
+      "mismatched": 1518,
+      "no_spec": 0,
+      "issues": [
+        "record fields in live missing from corpus: ['_links']",
+        "record fields in live missing from corpus: ['_links', 'isContainer']"
+      ]
+    },
+    {
+      "method": "GET",
+      "spec_path": "/{organization}/{project}/_apis/git/repositories/{repo_id}/pullRequests/{pull_request_id}/threads",
+      "sample_url": "https://dev.azure.com/MilwaukeeToolData/enterprise-data/_apis/git/repositories/0177c1f4-c460-4e64-a089-01956ac5a13a/pullRequests/8066/threads?api-version=7.1",
+      "status": "mismatched",
+      "calls": 1735,
+      "matched": 23,
+      "mismatched": 1712,
+      "no_spec": 0,
+      "issues": [
+        "record fields in live missing from corpus: ['_links', 'identities', 'properties', 'pullRequestThreadContext']"
+      ]
+    },
+    {
+      "method": "GET",
+      "spec_path": "/{organization}/{project}/_apis/git/repositories/{repo_id}/pullRequests/{pull_request_id}/workitems",
+      "sample_url": "https://dev.azure.com/MilwaukeeToolData/enterprise-data/_apis/git/repositories/0177c1f4-c460-4e64-a089-01956ac5a13a/pullRequests/8066/workitems?api-version=7.1",
+      "status": "validated",
+      "calls": 2601,
+      "matched": 2601,
+      "mismatched": 0,
+      "no_spec": 0,
+      "issues": []
+    },
+    {
+      "method": "GET",
+      "spec_path": "/{organization}/{project}/_apis/git/repositories/{repo_id}/pullrequests",
+      "sample_url": "https://dev.azure.com/MilwaukeeToolData/enterprise-data/_apis/git/repositories/0177c1f4-c460-4e64-a089-01956ac5a13a/pullrequests?api-version=7.1&searchCriteria.status=all",
+      "status": "mismatched",
+      "calls": 615,
+      "matched": 260,
+      "mismatched": 355,
+      "no_spec": 0,
+      "issues": [
+        "record fields in live missing from corpus: ['completionOptions', 'completionQueueTime', 'isDraft', 'repository', 'reviewers']",
+        "record fields in live missing from corpus: ['isDraft', 'repository', 'reviewers']"
+      ]
+    },
+    {
+      "method": "GET",
+      "spec_path": "/{organization}/{project}/_apis/git/repositories/{repo_id}/pushes",
+      "sample_url": "https://dev.azure.com/MilwaukeeToolData/enterprise-data/_apis/git/repositories/0177c1f4-c460-4e64-a089-01956ac5a13a/pushes?api-version=7.1&%24top=1000&%24skip=0",
+      "status": "mismatched",
+      "calls": 201,
+      "matched": 0,
+      "mismatched": 201,
+      "no_spec": 0,
+      "issues": [
+        "record fields in live missing from corpus: ['repository']"
+      ]
+    },
+    {
+      "method": "GET",
+      "spec_path": "/{organization}/{project}/_apis/git/repositories/{repo_id}/refs",
+      "sample_url": "https://dev.azure.com/MilwaukeeToolData/enterprise-data/_apis/git/repositories/0177c1f4-c460-4e64-a089-01956ac5a13a/refs?api-version=7.1",
+      "status": "validated",
+      "calls": 123,
+      "matched": 123,
+      "mismatched": 0,
+      "no_spec": 0,
+      "issues": []
+    },
+    {
+      "method": "GET",
+      "spec_path": "/{organization}/{project}/_apis/pipelines",
+      "sample_url": "https://dev.azure.com/MilwaukeeToolData/enterprise-data/_apis/pipelines?api-version=7.1&%24top=1000",
+      "status": "mismatched",
+      "calls": 3,
+      "matched": 0,
+      "mismatched": 3,
+      "no_spec": 0,
+      "issues": [
+        "record fields in live missing from corpus: ['_links']"
+      ]
+    },
+    {
+      "method": "GET",
+      "spec_path": "/{organization}/{project}/_apis/wit/reporting/workitemrevisions",
+      "sample_url": "https://dev.azure.com/MilwaukeeToolData/enterprise-data/_apis/wit/reporting/workitemrevisions?api-version=7.1&includeDeleted=true",
+      "status": "mismatched",
+      "calls": 3,
+      "matched": 0,
+      "mismatched": 3,
+      "no_spec": 0,
+      "issues": [
+        "top-level keys in live missing from spec: ['continuationToken']"
+      ]
+    },
+    {
+      "method": "GET",
+      "spec_path": "/{organization}/{project}/_apis/wit/workitems",
+      "sample_url": "https://dev.azure.com/MilwaukeeToolData/enterprise-data/_apis/wit/workitems?api-version=7.1&ids=1%2C2&%24expand=relations&%24errorPolicy=omit",
+      "status": "mismatched",
+      "calls": 9,
+      "matched": 0,
+      "mismatched": 9,
+      "no_spec": 0,
+      "issues": [
+        "status_code: live=404 spec=200",
+        "top-level keys in live missing from spec: ['$id', 'errorCode', 'eventId', 'innerException', 'message']"
+      ]
+    },
+    {
+      "method": "GET",
+      "spec_path": "/{organization}/{project}/_apis/wit/workitemtypes",
+      "sample_url": "https://dev.azure.com/MilwaukeeToolData/enterprise-data/_apis/wit/workitemtypes?api-version=7.1",
+      "status": "mismatched",
+      "calls": 3,
+      "matched": 0,
+      "mismatched": 3,
+      "no_spec": 0,
+      "issues": [
+        "record fields in live missing from corpus: ['fieldInstances', 'transitions', 'xmlForm']"
+      ]
+    }
+  ],
+  "summary": {
+    "endpoints_total": 17,
+    "endpoints_validated": 6,
+    "endpoints_mismatched": 11,
+    "endpoints_missing_spec": 0
+  }
+}

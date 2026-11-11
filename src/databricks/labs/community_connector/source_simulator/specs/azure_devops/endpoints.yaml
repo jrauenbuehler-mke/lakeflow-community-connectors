@@ -150,3 +150,30 @@ endpoints:
           count: 0
           isLastBatch: true
           nextLink: null
+
+  - path: /{organization}/{project}/_apis/pipelines
+    method: GET
+    corpus: pipelines
+    response:
+      pagination_style: none
+      wrapper:
+        records_key: value
+        extras: {count: 0}
+
+  - path: /{organization}/{project}/_apis/build/builds
+    method: GET
+    corpus: builds
+    response:
+      pagination_style: none
+      wrapper:
+        records_key: value
+        extras: {count: 0}
+
+  - path: /{organization}/{project}/_apis/build/builds/{build_id}/timeline
+    method: GET
+    corpus: build_timeline
+    response:
+      pagination_style: none
+      wrapper:
+        records_key: records
+        extras: {}
