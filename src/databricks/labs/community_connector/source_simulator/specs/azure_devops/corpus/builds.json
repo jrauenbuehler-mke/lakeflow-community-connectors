@@ -2,6 +2,11 @@
   {
     "id": 1000,
     "buildNumber": "victor-884",
+    "_links": {"self": {"href": "https://example.invalid/builds/1000"}},
+    "appendCommitMessageToRunName": true,
+    "buildNumberRevision": 1,
+    "logs": {"id": 1, "type": "Container", "url": "https://example.invalid/logs"},
+    "orchestrationPlan": {"planId": "00000000-0000-0000-0000-000000000000"},
     "status": "victor-900",
     "result": "kilo-582",
     "queueTime": "lima-455",

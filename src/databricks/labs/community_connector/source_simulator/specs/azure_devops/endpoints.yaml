@@ -176,4 +176,9 @@ endpoints:
       pagination_style: none
       wrapper:
         records_key: records
-        extras: {}
+        extras:
+          id: "00000000-0000-0000-0000-000000000000"
+          changeId: 1
+          lastChangedBy: "00000000-0000-0000-0000-000000000000"
+          lastChangedOn: "2024-01-01T00:00:00Z"
+          url: "https://example.invalid/timeline"

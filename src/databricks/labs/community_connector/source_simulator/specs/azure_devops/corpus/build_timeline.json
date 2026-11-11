@@ -2,6 +2,10 @@
   {
     "id": "whiskey--pk0",
     "parentId": "victor-962",
+    "currentOperation": null,
+    "details": null,
+    "previousAttempts": [],
+    "refName": "echo-844",
     "type": "zulu-899",
     "name": "romeo-131",
     "identifier": "echo-844",

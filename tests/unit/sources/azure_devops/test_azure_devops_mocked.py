@@ -671,17 +671,54 @@ def test_parse_ts_handles_any_fraction_length(value):
     assert parse_ts("2024-01-01T10:00:00.5Z") > parse_ts("2024-01-01T10:00:00Z")
 
 
-def test_build_timeline_treats_204_as_no_steps(conn):
-    """A build that never ran returns 204 No Content (no JSON body)."""
+def test_build_timeline_all_204_returns_start_offset(conn):
+    """A build that never ran returns 204 No Content (no JSON body). With
+    nothing to emit, the offset must not advance past an empty batch."""
     conn._session.get.side_effect = [
         _response(json_body={"value": [_build(1, "2024-01-01T10:00:00Z")]}),
         _response(status_code=204),
+        _response(json_body={"value": []}),
     ]
 
     rows, end = conn._read_build_timeline({}, {})
 
     assert list(rows) == []
+    assert end == {}
+
+
+def test_build_timeline_advances_past_empty_batches_to_find_rows(conn):
+    """With a cap of 1 build, an all-204 batch is skipped and the next
+    batch's rows are returned with the advanced offset."""
+    conn._session.get.side_effect = [
+        _response(json_body={"value": [
+            _build(1, "2024-01-01T10:00:00Z"),
+            _build(2, "2024-01-01T11:00:00Z"),
+        ]}),
+        _response(status_code=204),
+        _response(json_body={"value": [_build(2, "2024-01-01T11:00:00Z")]}),
+        _response(json_body={"records": [{"id": "a", "type": "Stage"}]}),
+    ]
+
+    rows, end = conn._read_build_timeline(
+        {}, {"max_records_per_batch": "1"}
+    )
+
+    assert [(r["build_id"], r["id"]) for r in rows] == [(2, "a")]
+    assert end == {"watermarks": {"proj1": "2024-01-01T11:00:00Z"}}
+
+
+def test_builds_are_capped_at_connector_init_time(conn):
+    """Builds finishing after the connector started wait for the next run."""
+    future = "2999-01-01T00:00:00Z"
+    conn._session.get.return_value = _response(
+        json_body={"value": [_build(1, "2024-01-01T10:00:00Z"), _build(2, future)]}
+    )
+
+    records, end = conn._read_builds({}, {})
+
+    assert [r["id"] for r in records] == [1]
     assert end == {"watermarks": {"proj1": "2024-01-01T10:00:00Z"}}
+    assert conn._session.get.call_args.kwargs["params"]["maxTime"]
 
 
 def test_workitems_bulk_fetch_omits_unreadable_items(conn):

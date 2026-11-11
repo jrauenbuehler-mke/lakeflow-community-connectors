@@ -597,7 +597,7 @@ def register_lakeflow_source(spark):
 
 
     ########################################################
-    # src/databricks/labs/community_connector/sources/azure_devops/azure_devops_schemas.py
+    # src/databricks\labs\community_connector\sources\azure_devops\azure_devops_schemas.py
     ########################################################
 
     PROJECT_STRUCT = StructType(
@@ -1474,6 +1474,9 @@ def register_lakeflow_source(spark):
             self.vssps_base_url = (
                 f"https://vssps.dev.azure.com/{organization}"
             )
+            # Builds finishing after this instant wait for the next run, so an
+            # incremental read always converges even while builds keep finishing.
+            self._init_time = datetime.now(timezone.utc)
 
             self._session = requests.Session()
             self._session.headers.update({"Accept": "application/json"})
@@ -2617,13 +2620,15 @@ def register_lakeflow_source(spark):
             Only completed builds are returned: their finish time is final, so
             it is a safe, ascending append cursor. ADO's ``minTime`` is
             inclusive, so the boundary build is dropped client-side to avoid
-            duplicates in append tables.
+            duplicates in append tables. Builds finishing after the connector
+            was created are left for the next run (``maxTime``).
             """
             params: dict[str, str] = {
                 "api-version": "7.1",
                 "statusFilter": "completed",
                 "queryOrder": "finishTimeAscending",
                 "$top": "1000",
+                "maxTime": self._init_time.strftime("%Y-%m-%dT%H:%M:%S.%fZ"),
             }
             if since:
                 params["minTime"] = since
@@ -2641,6 +2646,7 @@ def register_lakeflow_source(spark):
                 b for b in builds
                 if b.get("finishTime")
                 and (since_dt is None or parse_ts(b["finishTime"]) > since_dt)
+                and parse_ts(b["finishTime"]) <= self._init_time
             ]
             fresh.sort(key=lambda b: parse_ts(b["finishTime"]))
             return fresh
@@ -2785,16 +2791,24 @@ def register_lakeflow_source(spark):
                 )
                 return iter(rows), start_offset or {}
 
-            pairs, watermarks = self._collect_new_builds(
-                start_offset, table_options
-            )
-            if not pairs:
-                return iter([]), start_offset or {}
+            offset = start_offset or {}
+            # Builds with no timeline (204/404) yield no rows. Keep advancing
+            # past them until some rows appear: an empty batch must never be
+            # paired with an advanced offset. If none appear, the start offset
+            # is returned and those builds are re-checked on the next run.
+            while True:
+                pairs, watermarks = self._collect_new_builds(
+                    offset, table_options
+                )
+                if not pairs:
+                    return iter([]), start_offset or {}
 
-            rows: list[dict[str, Any]] = []
-            for project, build in pairs:
-                rows.extend(self._timeline_rows(project, build))
-            return iter(rows), {"watermarks": watermarks}
+                rows: list[dict[str, Any]] = []
+                for project, build in pairs:
+                    rows.extend(self._timeline_rows(project, build))
+                offset = {"watermarks": watermarks}
+                if rows:
+                    return iter(rows), offset
 
 
     ########################################################

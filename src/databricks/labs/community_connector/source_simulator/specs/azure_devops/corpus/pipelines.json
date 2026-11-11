@@ -2,6 +2,7 @@
   {
     "id": 1000,
     "name": "golf-245",
+    "_links": {"self": {"href": "https://example.invalid/pipelines/1000"}},
     "folder": "golf-415",
     "revision": 91695,
     "url": "echo-638",
